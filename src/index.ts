@@ -2,11 +2,15 @@ import express from "express";
 import { env } from "./config/envs.js";
 import { AppRouter as appRouter } from "./router.js";
 import { errorHandler } from "./middlewares/middleware.js";
+import { PaymentController } from "./controllers/payment.controller.js";
 
 const App = () => {
 
     const app = express();
 
+    // Stripe webhook
+    app.post('/stripe/webhook', express.raw({ type: 'application/json'}), PaymentController.webhook);
+    
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
 

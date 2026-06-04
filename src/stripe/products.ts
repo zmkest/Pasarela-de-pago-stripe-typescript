@@ -3,64 +3,63 @@ import Stripe from 'stripe';
 import { CreateProductDto } from './Dtos/create-product.js';
 import { UpdateProductDto } from './Dtos/update-product.js';
 
-async function createProduct(createProduct: CreateProductDto): Promise<Stripe.Product>{
-    const { name, price } = createProduct;
-    const product = await stripeClient.products.create({
-        name,
-        default_price_data: {
-            currency: 'usd',
-            unit_amount: price * 100,
-        }
-    });
-    return product;
-}
-
-const updateProduct = async (product: UpdateProductDto): Promise<Stripe.Product> => {
-    const { id, ...updateData } = product;
-
-    const data = await retrieveProduct(id);
-
-    const objUpdateStripe: Stripe.ProductUpdateParams = {};
-
-    if (updateData.name) objUpdateStripe.name = updateData.name;
-    if (updateData.price) {
-        const price = await stripeClient.prices.create({
-            unit_amount: updateData.price * 100,
-            currency: 'usd',
-            product: id,
+export class Product {
+    static createProduct = async (createProduct: CreateProductDto): Promise<Stripe.Product> => {
+        const { name, price } = createProduct;
+        const product = await stripeClient.products.create({
+            name,
+            default_price_data: {
+                currency: 'usd',
+                unit_amount: price * 100,
+            }
         });
-        objUpdateStripe.default_price = price.id;
+        return product;
     }
 
-    const updatedProduct = await stripeClient.products.update(id, objUpdateStripe);
+    static updateProduct = async (product: UpdateProductDto): Promise<Stripe.Product> => {
+        const { id, ...updateData } = product;
 
-    return updatedProduct;
-}
+        const data = await this.retrieveProduct(id);
 
-const retrieveProduct = async (id: string): Promise<Stripe.Product> => {
-    const product = await stripeClient.products.retrieve(id);
-    return product;
-}
+        const objUpdateStripe: Stripe.ProductUpdateParams = {};
 
-const listProducts = async (): Promise<Stripe.ApiList<Stripe.Product>> => {
-    const product = await stripeClient.products.list();
-    return product;
-}
+        if (updateData.name) objUpdateStripe.name = updateData.name;
+        if (updateData.price) {
+            const price = await stripeClient.prices.create({
+                unit_amount: updateData.price * 100,
+                currency: 'usd',
+                product: id,
+            });
+            objUpdateStripe.default_price = price.id;
+        }
 
-const deleteProduct = async (id: string): Promise<Stripe.Product> => {
-    await retrieveProduct(id);
+        const updatedProduct = await stripeClient.products.update(id, objUpdateStripe);
 
-    const product = await stripeClient.products.update(id, {
-        active: false
-    });
+        return updatedProduct;
+    }
 
-    return product;
-}
+    static retrieveProduct = async (id: string): Promise<Stripe.Product> => {
+        const product = await stripeClient.products.retrieve(id);
+        return product;
+    }
 
-export const ProductService = {
-    createProduct,
-    updateProduct,
-    retrieveProduct,
-    listProducts,
-    deleteProduct
+    static listProducts = async (): Promise<Stripe.ApiList<Stripe.Product>> => {
+        const product = await stripeClient.products.list();
+        return product;
+    }
+
+    static deleteProduct = async (id: string): Promise<Stripe.Product> => {
+        await this.retrieveProduct(id);
+
+        const product = await stripeClient.products.update(id, {
+            active: false
+        });
+
+        return product;
+    }
+
+    static listPrices = async (id: string) => {
+        const prices = await stripeClient.prices.list({product: id});
+        return prices;
+    }
 }
